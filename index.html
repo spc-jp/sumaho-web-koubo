@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スマホWeb工房 - たった3分で、売れる1ページ。</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; }
+        
+        /* エディタとプレビューの高さ固定 */
+        .main-container { height: calc(100vh - 56px); }
+
+        /* スマホプレビュー枠 */
+        .phone-mockup {
+            width: 375px;
+            height: 750px;
+            border: 12px solid #333;
+            border-radius: 35px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background: #333;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            z-index: 30;
+        }
+
+        /* iframeのスクロールを有効に */
+        .preview-frame {
+            border: none;
+            width: 100%;
+            flex: 1;
+            background: white;
+            overflow-y: auto;
+        }
+
+        /* カスタムスクロールバー（エディタ側） */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        /* フェードインアニメーション */
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden text-gray-800">
+
+    <!-- ヘッダー -->
+    <header class="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 shadow-sm z-20 shrink-0">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-mobile-screen-button text-blue-600 text-xl"></i>
+            <div>
+                <h1 class="font-bold text-base leading-none">スマホWeb工房</h1>
+                <p class="text-[10px] text-gray-400 mt-1 font-bold">たった3分で、売れる1ページ。</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <!-- 追加：QRコードボタン -->
+            <button onclick="openQrModal()" class="text-gray-400 hover:text-blue-600 p-2" title="スマホでプレビュー">
+                <i class="fa-solid fa-qrcode text-xl"></i>
+            </button>
+            <button onclick="openModal('usageModal')" class="text-gray-400 hover:text-blue-600 p-2" title="使い方">
+                <i class="fa-solid fa-circle-question text-xl"></i>
+            </button>
+            <button onclick="openModal('settingsModal')" class="text-gray-400 hover:text-gray-800 p-2" title="設定">
+                <i class="fa-solid fa-gear text-xl"></i>
+            </button>
+            <button onclick="downloadHTML()" class="ml-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg shadow transition active:scale-95 text-xs flex items-center gap-1">
+                <i class="fa-solid fa-download"></i> 書き出し
+            </button>
+        </div>
+    </header>
+
+    <!-- メイン -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden main-container">
+        
+        <!-- 左：編集エリア -->
+        <div id="editorPanel" class="w-full md:w-1/2 lg:w-5/12 overflow-y-auto bg-gray-50 p-4 md:p-6 pb-24 border-r border-gray-200">
+            <div class="max-w-xl mx-auto space-y-6">
+                
+                <!-- 業種テンプレート -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-3 tracking-widest">業種テンプレート</label>
+                    <div class="grid grid-cols-3 sm:grid-cols-5 gap-2" id="templateTabs"></div>
+                </div>
+
+                <form id="editorForm" class="space-y-6">
+                    <!-- 基本情報 -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <h2 class="text-sm font-bold text-gray-700 uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-building text-blue-500"></i> 基本情報</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 mb-1">サイト名（会社名／店名）</label>
+                                <input type="text" name="company" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="株式会社〇〇">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 mb-1">キャッチコピー</label>
+                                <input type="text" name="catchCopy" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="ここにキャッチコピーが入ります">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 mb-2">テーマカラー</label>
+                                <div class="flex gap-3 overflow-x-auto pb-1" id="colorPalette"></div>
+                                <input type="hidden" name="theme" value="blue">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 写真設定 -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <h2 class="text-sm font-bold text-gray-700 uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-image text-green-500"></i> 写真設定 (URL)</h2>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 mb-1">メイン画像（ヒーロー）</label>
+                                <input type="text" name="heroImg" class="w-full p-2 text-xs border border-gray-200 rounded-lg bg-gray-50" placeholder="https://...">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 mb-1">サブ画像1</label>
+                                    <input type="text" name="subImg1" class="w-full p-2 text-xs border border-gray-200 rounded-lg bg-gray-50" placeholder="https://...">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 mb-1">サブ画像2</label>
+                                    <input type="text" name="subImg2" class="w-full p-2 text-xs border border-gray-200 rounded-lg bg-gray-50" placeholder="https://...">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 強みカード -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <h2 class="text-sm font-bold text-gray-700 uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-star text-yellow-500"></i> 強みポイント (3つ)</h2>
+                        <div class="space-y-4">
+                            <div class="p-3 bg-gray-50 rounded-xl space-y-2">
+                                <div class="flex gap-2">
+                                    <input type="text" name="f1Title" class="flex-1 p-2 border border-gray-200 rounded text-xs font-bold" placeholder="タイトル1">
+                                    <input type="text" name="f1Icon" class="w-1/3 p-2 border border-gray-200 rounded text-[10px]" placeholder="アイコン(fa-star等)">
+                                </div>
+                                <textarea name="f1Desc" rows="2" class="w-full p-2 border border-gray-200 rounded text-xs" placeholder="説明文"></textarea>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded-xl space-y-2">
+                                <div class="flex gap-2">
+                                    <input type="text" name="f2Title" class="flex-1 p-2 border border-gray-200 rounded text-xs font-bold" placeholder="タイトル2">
+                                    <input type="text" name="f2Icon" class="w-1/3 p-2 border border-gray-200 rounded text-[10px]" placeholder="アイコン">
+                                </div>
+                                <textarea name="f2Desc" rows="2" class="w-full p-2 border border-gray-200 rounded text-xs" placeholder="説明文"></textarea>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded-xl space-y-2">
+                                <div class="flex gap-2">
+                                    <input type="text" name="f3Title" class="flex-1 p-2 border border-gray-200 rounded text-xs font-bold" placeholder="タイトル3">
+                                    <input type="text" name="f3Icon" class="w-1/3 p-2 border border-gray-200 rounded text-[10px]" placeholder="アイコン">
+                                </div>
+                                <textarea name="f3Desc" rows="2" class="w-full p-2 border border-gray-200 rounded text-xs" placeholder="説明文"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- コンテンツ詳細 -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <h2 class="text-sm font-bold text-gray-700 uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-list-ul text-purple-500"></i> コンテンツ詳細</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">サービス／メニュー内容</label>
+                                <textarea name="services" rows="3" class="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" placeholder="提供内容..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">実績／事例</label>
+                                <textarea name="achievements" rows="3" class="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" placeholder="事例など..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 mb-1">代表メッセージ</label>
+                                <textarea name="message" rows="3" class="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" placeholder="想いを一言..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CTA -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <h2 class="text-sm font-bold text-gray-700 uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-paper-plane text-orange-500"></i> お問い合わせ (CTA)</h2>
+                        <div class="space-y-3">
+                            <input type="text" name="ctaUrl" class="w-full p-2 border border-gray-200 rounded text-sm" placeholder="URL (https://...)">
+                            <input type="text" name="ctaLabel" class="w-full p-2 bg-blue-50 border border-blue-200 rounded text-sm font-bold text-blue-700" placeholder="ボタンの文言">
+                        </div>
+                    </div>
+                </form>
+
+                <div class="pt-4 pb-12 flex gap-2">
+                    <button onclick="downloadHTML()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i> HTMLを書き出す
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右：PC上でのプレビュー -->
+        <div class="hidden md:flex flex-1 bg-slate-200 items-center justify-center p-4 relative overflow-hidden">
+            <div class="phone-mockup">
+                <div class="phone-notch"></div>
+                <iframe id="previewFrame" class="preview-frame"></iframe>
+            </div>
+            <div class="absolute bottom-4 right-6 text-gray-400 text-[10px] font-bold tracking-widest uppercase flex items-center gap-2">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Live Preview
+            </div>
+        </div>
+
+        <!-- モバイル専用：プレビュー切替ボタン -->
+        <button onclick="toggleMobileView()" class="md:hidden fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-2xl z-50 transition active:scale-90">
+            <i class="fa-solid fa-eye text-xl"></i>
+        </button>
+
+        <!-- スマホ用プレビューオーバーレイ -->
+        <div id="mobileOverlay" class="fixed inset-0 bg-white z-[60] hidden flex-col animate-fade-in">
+            <div class="h-14 border-b flex items-center justify-between px-4 shrink-0">
+                <span class="font-bold text-gray-600">プレビュー</span>
+                <button onclick="toggleMobileView()" class="text-blue-600 font-bold px-3 py-1">編集に戻る</button>
+            </div>
+            <div class="flex-1 bg-gray-100 overflow-hidden">
+                <iframe id="mobilePreviewFrame" class="preview-frame h-full w-full"></iframe>
+            </div>
+        </div>
+    </main>
+
+    <!-- QRコードモーダル -->
+    <div id="qrModal" class="modal-overlay fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 text-center animate-fade-in">
+            <h3 class="font-bold text-lg mb-4 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-mobile-screen"></i> スマホでプレビュー
+            </h3>
+            <p class="text-xs text-gray-500 mb-6 leading-relaxed">
+                以下のQRコードをスマホで読み取ると、<br>現在編集中の内容を実機で確認できます。
+            </p>
+            <div class="bg-gray-50 p-6 rounded-2xl flex justify-center mb-6 border border-gray-100">
+                <img id="qrImage" src="" alt="QR Code" class="w-48 h-48 shadow-sm">
+            </div>
+            <div class="text-[10px] text-gray-400 mb-6 bg-yellow-50 p-3 rounded-lg border border-yellow-100 text-left">
+                <i class="fa-solid fa-circle-info mr-1"></i> スマホで開いた後、右下の<strong>目のアイコン</strong>を押すと完成画面が全画面で表示されます。
+            </div>
+            <button onclick="closeModal('qrModal')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 rounded-2xl font-bold transition">閉じる</button>
+        </div>
+    </div>
+
+    <!-- 使い方モーダル -->
+    <div id="usageModal" class="modal-overlay fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 animate-fade-in">
+            <h3 class="font-bold text-xl mb-6 text-blue-600 flex items-center gap-2 italic">How to Use</h3>
+            <div class="text-sm space-y-4 text-gray-600 leading-relaxed">
+                <div class="flex gap-3"><span class="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 font-bold text-xs">1</span><p>業種テンプレートを選んで雛形をセット。</p></div>
+                <div class="flex gap-3"><span class="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 font-bold text-xs">2</span><p>必要項目を埋めると、プレビューがリアルタイム更新されます。</p></div>
+                <div class="flex gap-3"><span class="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 font-bold text-xs">3</span><p>設定から「デモデータを反映」すれば、より早く完成イメージが掴めます。</p></div>
+                <div class="flex gap-3"><span class="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 font-bold text-xs">4</span><p><strong>QRボタン</strong>からスマホ実機での確認も可能です。</p></div>
+            </div>
+            <button onclick="closeModal('usageModal')" class="w-full mt-8 bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-200 transition">わかった</button>
+        </div>
+    </div>
+
+    <!-- 設定モーダル -->
+    <div id="settingsModal" class="modal-overlay fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 animate-fade-in">
+            <h3 class="font-bold text-lg mb-8 flex items-center gap-2"><i class="fa-solid fa-gear text-gray-400"></i> 管理設定</h3>
+            <div class="space-y-4">
+                <button onclick="applyDemoData()" class="w-full bg-green-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-green-100 transition active:scale-95">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> デモデータを反映
+                </button>
+                <div class="flex items-center justify-center gap-4 pt-6 border-t border-gray-50">
+                    <button onclick="clearData()" class="text-xs text-gray-300 hover:text-red-500 underline transition">
+                        すべての入力をリセット
+                    </button>
+                </div>
+            </div>
+            <button onclick="closeModal('settingsModal')" class="w-full mt-8 text-gray-400 text-sm font-bold">閉じる</button>
+        </div>
+    </div>
+
+    <script>
+        const templates = {
+            manufacturing: {
+                name: "製造", icon: "fa-industry", color: "blue", cta: "見積相談する",
+                demo: { company: "前田金属工業", catchCopy: "ミクロン単位の精度で、理想をカタチに。", heroImg: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800", subImg1: "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=400", subImg2: "https://images.unsplash.com/photo-1537462715879-360eeb61a0ad?w=400", f1t: "短納期対応", f1i: "fa-truck-fast", f1d: "独自の工程管理により、最短3日での納品を実現します。", f2t: "一貫体制", f2i: "fa-arrows-spin", f2d: "設計から加工、表面処理までワンストップ。窓口が一つでスムーズです。", f3t: "特殊加工", f3i: "fa-microchip", f3d: "難削材や複雑形状もご相談ください。職人の技で解決します。", services: "・精密旋盤加工\n・マシニングセンタ加工\n・部品組立", achievements: "・自動車部品メーカーA社様納入\n・特許取得機器の試作パーツ製作", message: "創業50年。磨き上げた技術でお客様の課題を解決します。", ctaLabel: "見積相談する", theme: "blue", ctaUrl: "#" }
+            },
+            wholesale: {
+                name: "卸", icon: "fa-truck-ramp-box", color: "slate", cta: "取引の相談をする",
+                demo: { company: "東日本総合卸売", catchCopy: "全国の逸品を、最速で店舗へ。", heroImg: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800", subImg1: "https://images.unsplash.com/photo-1553413077-190dd305871c?w=400", subImg2: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=400", f1t: "豊富な在庫", f1i: "fa-boxes-stacked", f1d: "常時5万点以上のアイテムをストック。欠品リスクを最小化します。", f2t: "翌日配送", f2i: "fa-bolt", f2d: "自社物流網により、関東近郊なら翌日午前中の配送が可能です。", f3t: "提案力", f3i: "fa-chart-line", f3d: "売れ筋データに基づき、店舗ごとの最適な棚割りを提案します。", services: "・食品卸\n・日用雑貨卸\n・店舗什器の販売", achievements: "・全国のスーパー300店舗と取引\n・年間流通額 100億円突破", message: "「売れる棚」を共に作るパートナーとして。", ctaLabel: "取引の相談をする", theme: "slate", ctaUrl: "#" }
+            },
+            beauty: {
+                name: "美容・飲食", icon: "fa-utensils", color: "orange", cta: "予約する",
+                demo: { company: "和カフェ 木漏れ日", catchCopy: "日常を忘れる、至福のひとときを。", heroImg: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800", subImg1: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400", subImg2: "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=400", f1t: "厳選素材", f1i: "fa-seedling", f1d: "地元の契約農家から届く、新鮮な有機野菜を使用しています。", f2t: "落ち着く空間", f2i: "fa-couch", f2d: "木のぬくもりを感じる店内で、ゆっくりとおくつろぎいただけます。", f3t: "自家製スイーツ", f3i: "fa-cookie", f3d: "パティシエが毎日手作りする、季節の和スイーツが人気です。", services: "・ランチセット 1,200円〜\n・お抹茶パフェ 850円\n・貸切パーティー(要予約)", achievements: "・雑誌「カフェ散歩」掲載\n・食べログ口コミ評価 4.2獲得", message: "心温まるお料理をご用意してお待ちしております。", ctaLabel: "予約する", theme: "orange", ctaUrl: "#" }
+            },
+            law: {
+                name: "士業型", icon: "fa-scale-balanced", color: "blue", cta: "無料で相談する",
+                demo: { company: "加藤社会保険労務士事務所", catchCopy: "経営者の悩みを、未来の希望に変える。", heroImg: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800", subImg1: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400", subImg2: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400", f1t: "親身なサポート", f1i: "fa-hands-holding", f1d: "どんな些細な悩みも丁寧にお伺いし、解決の糸口を提案します。", f2t: "DX推進", f2i: "fa-laptop-code", f2d: "クラウド活用による給与計算、労務管理の効率化を得意としています。", f3t: "助成金に強い", f3i: "fa-sack-dollar", f3d: "採択率の高い助成金申請を、計画策定からサポートします。", services: "・就業規則の作成\n・助成金申請代行\n・労務顧問契約", achievements: "・相談実績 累計1,000件以上\n・導入企業の離職率 30%低下", message: "経営者の「一番の味方」でありたいと考えています。", ctaLabel: "無料で相談する", theme: "blue", ctaUrl: "#" }
+            },
+            consult: {
+                name: "コンサル型", icon: "fa-chart-pie", color: "red", cta: "無料相談する",
+                demo: { company: "Growth Partners", catchCopy: "Webで、ビジネスを加速させる。", heroImg: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800", subImg1: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400", subImg2: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=400", f1t: "結果にコミット", f1i: "fa-bullseye", f1d: "単なるアドバイスではなく、実数値の向上を目標に並走します。", f2t: "データ分析", f2i: "fa-magnifying-glass-chart", f2d: "経験に頼らず、徹底的なデータ解析に基づいた戦略を立案します。", f3t: "多角的支援", f3i: "fa-users-gear", f3d: "広告、SNS、SEO。ターゲットに最適なチャンネルを組み合わせます。", services: "・Web集客戦略立案\n・SNS運用代行\n・LPO(ランディングページ最適化)", achievements: "・ECサイト売上 前年比200%達成\n・支援実績 50業種以上", message: "あなたのビジネスの「伸びしろ」を見つけます。", ctaLabel: "無料相談する", theme: "red", ctaUrl: "#" }
+            }
+        };
+
+        const colors = {
+            blue: { main: '#2563eb', bg: '#eff6ff', text: '#1e3a8a' },
+            green: { main: '#16a34a', bg: '#f0fdf4', text: '#14532d' },
+            orange: { main: '#f97316', bg: '#fff7ed', text: '#7c2d12' },
+            red: { main: '#dc2626', bg: '#fef2f2', text: '#7f1d1d' },
+            slate: { main: '#334155', bg: '#f8fafc', text: '#0f172a' }
+        };
+
+        let activeTmplId = "manufacturing";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTabs();
+            renderPalette();
+            loadFromStorage();
+            updatePreview();
+            document.getElementById('editorForm').addEventListener('input', () => {
+                updatePreview();
+                saveToStorage();
+            });
+        });
+
+        function renderTabs() {
+            const container = document.getElementById('templateTabs');
+            container.innerHTML = "";
+            Object.entries(templates).forEach(([id, t]) => {
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.className = `flex flex-col items-center justify-center p-2 rounded-xl border text-[10px] font-bold transition ${activeTmplId === id ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-white border-gray-100 text-gray-400 hover:bg-gray-50'}`;
+                btn.innerHTML = `<i class="fa-solid ${t.icon} text-sm mb-1"></i>${t.name}`;
+                btn.onclick = () => {
+                    activeTmplId = id;
+                    const ctaInput = document.querySelector('[name="ctaLabel"]');
+                    if(!ctaInput.value || Object.values(templates).some(tmpl => tmpl.cta === ctaInput.value)) {
+                        ctaInput.value = t.cta;
+                    }
+                    renderTabs();
+                    updatePreview();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderPalette() {
+            const container = document.getElementById('colorPalette');
+            Object.keys(colors).forEach(c => {
+                const label = document.createElement('label');
+                label.className = "cursor-pointer group";
+                const isChecked = document.querySelector('[name="theme"]').value === c;
+                label.innerHTML = `
+                    <input type="radio" name="theme_radio" value="${c}" ${isChecked ? 'checked' : ''} class="hidden peer">
+                    <span class="block w-8 h-8 rounded-full ring-2 ring-offset-2 ring-transparent peer-checked:ring-blue-600 shadow-sm" style="background:${colors[c].main}"></span>
+                `;
+                label.onchange = () => {
+                    document.querySelector('[name="theme"]').value = c;
+                    updatePreview();
+                    saveToStorage();
+                };
+                container.appendChild(label);
+            });
+        }
+
+        function updatePreview() {
+            const f = document.getElementById('editorForm');
+            const data = {
+                company: f.company.value || "会社名",
+                catchCopy: f.catchCopy.value || "キャッチコピーが入ります",
+                theme: f.theme.value || "blue",
+                heroImg: f.heroImg.value || "https://placehold.jp/24/cccccc/ffffff/800x450.png?text=Main+Image",
+                subImg1: f.subImg1.value || "https://placehold.jp/24/eeeeee/aaaaaa/400x300.png?text=Sub+1",
+                subImg2: f.subImg2.value || "https://placehold.jp/24/eeeeee/aaaaaa/400x300.png?text=Sub+2",
+                f1t: f.f1Title.value || "強み1", f1i: f.f1Icon.value || "fa-star", f1d: f.f1Desc.value || "強みの説明文1...",
+                f2t: f.f2Title.value || "強み2", f2i: f.f2Icon.value || "fa-star", f2d: f.f2Desc.value || "強みの説明文2...",
+                f3t: f.f3Title.value || "強み3", f3i: f.f3Icon.value || "fa-star", f3d: f.f3Desc.value || "強みの説明文3...",
+                services: (f.services.value || "提供サービスやメニューの内容").replace(/\n/g, '<br>'),
+                achievements: (f.achievements.value || "実績や事例").replace(/\n/g, '<br>'),
+                message: (f.message.value || "代表からのメッセージ").replace(/\n/g, '<br>'),
+                ctaLabel: f.ctaLabel.value || templates[activeTmplId].cta,
+                ctaUrl: f.ctaUrl.value || "#"
+            };
+
+            const html = buildHTML(data);
+            document.getElementById('previewFrame').srcdoc = html;
+            document.getElementById('mobilePreviewFrame').srcdoc = html;
+        }
+
+        function buildHTML(data) {
+            const theme = colors[data.theme] || colors.blue;
+            return `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body { margin:0; padding:0; height: auto; min-height: 100%; font-family:sans-serif; color:#333; line-height:1.6; background:#fff; overflow-x: hidden; }
+        header { padding:15px; background:white; border-bottom:1px solid #eee; text-align:center; font-weight:bold; color:${theme.main}; position:sticky; top:0; z-index:100; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .hero { position:relative; height:240px; background:url('${data.heroImg}') center/cover no-repeat; display:flex; align-items:flex-end; background-color: #f0f0f0; }
+        .hero-overlay { position:absolute; inset:0; background:linear-gradient(transparent, rgba(0,0,0,0.8)); }
+        .hero-content { position:relative; z-index:1; padding:20px; color:white; }
+        .hero h2 { margin:0; font-size:1.4rem; text-shadow:0 2px 4px rgba(0,0,0,0.5); }
+        .section { padding:40px 20px; }
+        .section-title { font-size:1.2rem; font-weight:bold; border-left:4px solid ${theme.main}; padding-left:12px; margin-bottom:20px; color:${theme.text}; }
+        .card-grid { display:grid; gap:15px; }
+        .card { background:white; padding:20px; border-radius:15px; box-shadow:0 4px 12px rgba(0,0,0,0.05); border:1px solid #f0f0f0; text-align:center; }
+        .card i { font-size:1.8rem; color:${theme.main}; margin-bottom:12px; }
+        .card h3 { margin:0 0 10px; font-size:1rem; color:${theme.text}; }
+        .card p { margin:0; font-size:0.85rem; color:#666; }
+        .img-box { background:#f9f9f9; border-radius:20px; overflow:hidden; margin-bottom:20px; box-shadow:0 10px 20px rgba(0,0,0,0.05); }
+        .img-box img { width:100%; height:200px; object-fit:cover; background-color: #eee; }
+        .img-box-content { padding:20px; font-size:0.9rem; color: #555; }
+        .cta-btn { display:block; margin:20px; padding:20px; background:${theme.main}; color:white; text-align:center; text-decoration:none; border-radius:50px; font-weight:bold; font-size: 1.1rem; box-shadow:0 10px 25px -5px ${theme.main}66; }
+        footer { background:#1a1a1a; color:#888; padding:50px 20px; text-align:center; font-size:0.7rem; }
+    </style>
+</head>
+<body>
+    <header>${data.company}</header>
+    <div class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content"><h2>${data.catchCopy}</h2></div>
+    </div>
+    
+    <div class="section" style="background:#fcfcfc;">
+        <h3 class="section-title">私たちの強み</h3>
+        <div class="card-grid">
+            <div class="card"><i class="fa-solid ${data.f1i}"></i><h3>${data.f1t}</h3><p>${data.f1d}</p></div>
+            <div class="card"><i class="fa-solid ${data.f2i}"></i><h3>${data.f2t}</h3><p>${data.f2d}</p></div>
+            <div class="card"><i class="fa-solid ${data.f3i}"></i><h3>${data.f3t}</h3><p>${data.f3d}</p></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3 class="section-title">サービス／メニュー</h3>
+        <div class="img-box">
+            <img src="${data.subImg1}">
+            <div class="img-box-content">${data.services}</div>
+        </div>
+    </div>
+
+    <div class="section" style="background:#fcfcfc;">
+        <h3 class="section-title">実績・事例</h3>
+        <div class="img-box">
+            <img src="${data.subImg2}">
+            <div class="img-box-content">${data.achievements}</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3 class="section-title">メッセージ</h3>
+        <p style="text-align:center; color:#555; padding: 0 10px;">${data.message}</p>
+        <p style="text-align:center; font-weight:bold; margin-top:30px; font-size: 1.1rem; color: ${theme.main};">${data.company}</p>
+    </div>
+
+    <a href="${data.ctaUrl}" class="cta-btn">${data.ctaLabel} <i class="fa-solid fa-chevron-right ml-1"></i></a>
+
+    <footer>
+        <p>&copy; 2026 ${data.company} All Rights Reserved.</p>
+        <p style="margin-top:15px; opacity:0.4;">テスト版（ベータ版） © 2026 SPC</p>
+    </footer>
+</body>
+</html>
+            `;
+        }
+
+        function applyDemoData() {
+            const demo = templates[activeTmplId].demo;
+            const f = document.getElementById('editorForm');
+            Object.entries(demo).forEach(([key, val]) => {
+                if(f[key]) f[key].value = val;
+            });
+            renderPalette();
+            updatePreview();
+            saveToStorage();
+            closeModal('settingsModal');
+        }
+
+        function clearData() {
+            if(confirm('全てのデータをリセットしますか？')) {
+                document.getElementById('editorForm').reset();
+                localStorage.removeItem('spWebKobo_v2');
+                updatePreview();
+                closeModal('settingsModal');
+            }
+        }
+
+        function downloadHTML() {
+            const html = document.getElementById('previewFrame').srcdoc;
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `my_site.html`;
+            a.click();
+        }
+
+        function saveToStorage() {
+            const formData = new FormData(document.getElementById('editorForm'));
+            const obj = { activeTmplId };
+            formData.forEach((v, k) => obj[k] = v);
+            localStorage.setItem('spWebKobo_v2', JSON.stringify(obj));
+        }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem('spWebKobo_v2');
+            if(saved) {
+                const obj = JSON.parse(saved);
+                activeTmplId = obj.activeTmplId || "manufacturing";
+                const f = document.getElementById('editorForm');
+                Object.entries(obj).forEach(([k, v]) => { if(f[k]) f[k].value = v; });
+                renderTabs();
+            }
+        }
+
+        // QRコード生成と表示
+        function openQrModal() {
+            const url = window.location.href;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
+            document.getElementById('qrImage').src = qrUrl;
+            openModal('qrModal');
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        
+        function toggleMobileView() {
+            const el = document.getElementById('mobileOverlay');
+            el.classList.toggle('hidden');
+            el.classList.toggle('flex');
+        }
+    </script>
+</body>
+</html>
